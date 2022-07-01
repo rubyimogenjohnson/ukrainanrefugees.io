@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Ukrainian Refugee Crisis</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.js"></script>
+// Set style
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+     
+      }
+      #instructions { 
+        position: absolute;
+        margin: 1%;
+        width: 15%;
+        height: 45%; 
+        top: 0%;
+        bottom: 10%;
+        padding: 1%;
+        background-color: rgba(255, 255, 255, 0.9);
+        overflow-y: scroll;
+        font-family: sans-serif;
+        font-size: 0.8em;
+        line-height: 2em;
+        
+      }
+      .duration {
+        font-size: 2em;
+      }
+      #fly { 
+        display: block;
+        position: absolute;
+        margin: 1%;
+        width: 16%;
+        top: 48%;
+        bottom: 50%;
+        padding: 1%;
+        background-color: "#f68080";
+        border: none;
+        border-radius: 1%;
+        font-size: 100%;
+        text-align: center;
+        color: #fff;
+        background: #f68080;
+}
+        #laname {
+    
+        position: absolute;
+        margin: 1%;
+        width: 15%;
+        height: 12%; 
+        top: 53%;
+        bottom: 10%;
+        padding: 1%;
+        background-color: rgba(255, 255, 255, 0.9);
+        overflow-y: scroll;
+        font-family: sans-serif;
+        font-size: 0.8em;
+        line-height: 2em;
+        }
+        
+        .legend {
+        position: absolute;
+        margin: 1%;
+        width: 15%;
+        height: 20%;
+        top: 100;
+        bottom: 0%;
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.9);
+        overflow-y: scroll;
+        font-family: sans-serif;
+        font-size: 0.8em;
+        line-height: 2em;
+
+}
+
+.legend h4 {
+margin: 0 0 10px;
+}
+ 
+.legend div span {
+border-radius: 50%;
+display: inline-block;
+height: 10px;
+margin-right: 5px;
+width: 10px;
+}
+
+</style> 
+    
+<div id="map"></div>
+<br>
+<div id="instructions"></div>
+<button id="fly">Click to change the view.</button>
+<div id="laname">
+    <h2>Use your mouse to hover over the map at each stage. </h2></div> 
+<div id="idplegend" class="legend">
+<h3>Legend</h3>
+<h4>Internally Displaced Persons Since 24/02/2022 (%) </h4>
+<div><span style="background-color: #f68080"></span>26.00 - 35.00</div>
+<div><span style="background-color: #f7887d"></span>22.00 - 26.00</div>
+<div><span style="background-color: #f7907a"></span>17.50 - 22.00</div>
+<div><span style="background-color: #f6845a"></span>8.85 - 17.5</div>
+<div><span style="background-color: #f8a174"></span>4.5 - 8.85</div>
+<div><span style="background-color: #f2a873"></span>0.15 - 4.50</div>
+<div><span style="background-color: #fac38e"></span>0 - 0.15</div>
+<h4>Change in Visa Rules</h4>   
+<div><span style="background-color: #00798c"></span>EU Directive</div>
+<div><span style="background-color: #77946b"></span>Nearby Countries</div>
+<div><span style="background-color: #d1495b"></span>No Change</div>
+<div><span style="background-color: #edae49"></span>Other Visa Changes</div>
+</div>
+ 
+<script>
+
+// Load in style map
+	mapboxgl.accessToken = 'pk.eyJ1IjoicnVieWpvaG5zb24iLCJhIjoiY2t5bGUxYjYyMDVlbzJ2bzRkenUwenR5NiJ9.DJqkRqSMng99_9CRtbPwgg';
+// Map has choropleth map that disspears at zoom extent
+	var map = new mapboxgl.Map({
+		container: 'map', // container id
+		style: 'mapbox://styles/rubyjohnson/cl0pf2tnq00aw14qynda07mf0', // stylesheet location
+		center: [20,50], // starting position [lng, lat]        
+		zoom: 2.5,
+        bearing: 0, 
+        pitch:0// starting zoom
+	});
+    
+// Add in blurb 
+var instructions = document.getElementById('instructions');
+    instructions.innerHTML = "<h1> Ukrainian Refugee Crisis <h1> <h4> On the 24th February 2022, Russia invaded Ukraine. Almost 8 years exactly from the invasion of Crimea, the event has unsurprisingly sparked a mass movement of Ukrainians. Within the past three weeks, an estimated three million people have now fled Ukraine (United Nations, 2022). <br><br> By pressing the button below and hovering over the map, the following will be shown; <br><br> 1. How many Ukranians have been internally displaced. <br><br> 2. The international border crossing points from Ukraine into neighbouring countries. <br><br> 3. The inital intake of Ukranian Refugee's by neighbouring countries. <br><br> 4. The changes in Visa rules from other European countries. <br><br>Data was correct as of 13/03/2022. Data sourced from: <br><br> <a href=https://data2.unhcr.org/en/situations/ukraine> UNHCR Ukranian Refugee Crisis </a><br> <a href=https://www.unhcr.org/ua/en/resources/idp-dashboard>UNHCR Registration of Internal Displacement in Ukraine</a> <br><br>"
+;
+
+// Create fly to function between different scenes
+    
+var idx = 0
+
+var zoom = [
+    6,
+    6.5,
+    6.5,
+    6.5,
+    5.5,
+    4,
+    3,
+    
+];
+
+var center = [
+   [32.139960,49.535154],
+    [36.600971, 50.630053],
+    [28.149383, 51.898600],
+    [22.237945,48.657038 ],
+    
+    [30.139960,49.535154],
+    [30.139960,49.535154],
+    [15,50]
+];
+
+var pitch = [
+   [0],
+    [35],
+    [35],
+    [35],
+    [0],
+    [0],
+    [0],
+];
+
+// Loop over the variables 
+document.getElementById('fly').addEventListener('click', () => {
+    if (idx>= zoom.length){
+      idx=0;
+  }  
+    map.flyTo({
+        center: center[idx],
+        zoom: zoom[idx],
+        pitch: pitch[idx],
+});
+    idx++;
+});
+
+// Add in control
+map.addControl(new mapboxgl.NavigationControl());
+
+// Add in layers
+map.on("load", function(){
+    map.addLayer({        // Layer for internally displaced persons hover over          
+            id: 'LocalAuthorities4',
+            type: 'fill',
+            source: {
+              type: 'vector',
+              url: 'mapbox://rubyjohnson.9jatqiwe' 
+            },
+            'source-layer': 'idp-7rtn7m', 
+            'layout': {
+                'visibility': 'visible'
+            },
+            paint: {
+                'fill-color': 'grey',
+                'fill-opacity': 0
+                }
+          });
+      
+      map.addLayer({                  
+            id: 'lahighlight4',
+            type: 'line',
+            source: {
+              type: 'vector',
+              url: 'mapbox://rubyjohnson.9jatqiwe' 
+            },
+            'source-layer': 'idp-7rtn7m',
+            'layout': {
+                'visibility': 'visible'
+            },
+            paint: {
+                'line-color': 'white',
+            
+                'line-width': 5
+                },
+            filter: ['==','name','empty'],
+          "minzoom":2.5, // Hide layer at certain zoom levels, so to not over clutter the map
+            "maxzoom":3.5,
+          });
+    
+    map.on('mousemove', function(e) {       
+          var la4 = map.queryRenderedFeatures(e.point, {   
+            layers: ['LocalAuthorities4']
+          });
+
+
+        if (la4.length==1) {   
+
+        map.setFilter('lahighlight4', ['==','name',la4[0].properties.name]);  
+        console.log(la4[0].properties.name);
+        document.getElementById('laname').innerHTML = "<h3> Oblast: " + la4[0].properties.ADM1_EN + "<br> Internally Displaced Persons: " + la4[0].properties.IDP; // Change the name in the top left box to show info
+        console.log(la4[0].id);
+        console.log(la4);              
+        } else {
+        map.setFilter('lahighlight4', ['==','name','null']);
+        console.log('No features');
+        document.getElementById('laname').innerHTML = "<h2>Use your mouse to hover over the map at each stage.<h2>";
+        }
+        });       
+
+        map.addLayer({ // Layer showing intake of refugees from nearby countries
+            id: "intake",
+            type: "circle",
+            source: {
+                type: "vector",
+                url: "mapbox://rubyjohnson.a0tvnvrd"
+            },
+            "source-layer" :"intake-c2l9et",
+            "layout": {
+                "visibility":"visible"
+            },
+            "minzoom":3.5,
+            "maxzoom":4.5,
+            paint: { // Change size dependent on intake value
+                "circle-color":"#929496",
+                "circle-opacity":0.5,
+                "circle-stroke-width":3, 
+                "circle-stroke-color" : "#f68080",
+                "circle-stroke-opacity" :1,
+                "circle-radius": {
+                    property: "intake",
+                    stops: [
+                        [{zoom:9, value: 0}, 1],
+                        [{zoom:9, value: 1000}, 10],
+                        [{zoom:9, value: 100000}, 20],
+                        [{zoom:9, value: 1655503}, 50],
+                        [{zoom:20, value:0}, 3]
+                    ]
+                }}
+             
+        });
+    
+
+    var popup = new mapboxgl.Popup({closeButton: false}); // Add popup for intake of refugees
+    
+    map.on("mouseover","intake", function (e){
+        popup.setLngLat(e.features[0].geometry.coordinates)
+        .setHTML("<h3> Country: "+ e.features[0].properties.name + "</h3> Refugee Intake: " + e.features[0].properties.intake)
+        .addTo(map);
+    });
+    
+    map.on('mouseenter', 'intake', function () {
+        map.getCanvas().style.cursor = 'pointer';
+            });
+    
+    map.on('mouseleave', 'intake', function () { // Add in hover over for visa rules
+        map.getCanvas().style.cursor = '';
+        popup.remove();
+            });map.addLayer({                 
+            id: 'LocalAuthorities',
+            type: 'fill',
+            source: {
+              type: 'vector',
+              url: 'mapbox://rubyjohnson.8urbmxah' 
+            },
+            'source-layer': 'eu-cdu6ne', 
+            'layout': {
+                'visibility': 'visible'
+            },
+            paint: {
+                'fill-color': 'grey',
+                'fill-opacity': 0
+                },
+           "minzoom":3,
+            "maxzoom":3.5,
+           
+          });
+
+    map.addLayer({                 
+            id: 'lahighlight',
+            type: 'line',
+            source: {
+              type: 'vector',
+              url: 'mapbox://rubyjohnson.8urbmxah' 
+            },
+            'source-layer': 'eu-cdu6ne', 
+            'layout': {
+                'visibility': 'visible'
+            },
+            paint: {
+                'line-color': '#00798c', // BLUE COLOR
+            
+                'line-width': 5
+                },
+            filter: ['==','name','empty'],
+         "minzoom":3,
+            "maxzoom":3.5,
+          });
+
+
+    map.on('mousemove', function(e) {      
+          var la = map.queryRenderedFeatures(e.point, {  
+            layers: ['LocalAuthorities']
+          });
+
+        if (la.length==1) { 
+        map.setFilter('lahighlight', ['==','name',la[0].properties.name]);  
+        console.log(la[0].properties.name);
+        document.getElementById('laname').innerHTML = "<h4> Country: " + la[0].properties.name + "<br> Visa Rules: " + la[0].properties.visa; 
+        console.log(la[0].id);
+        console.log(la);
+        } else {
+        map.setFilter('lahighlight', ['==','name','null']);
+        console.log('No features');    
+        }
+        });
+
+    map.addLayer({                  
+            id: 'LocalAuthorities1',
+            type: 'fill',
+            source: {
+              type: 'vector',
+              url: 'mapbox://rubyjohnson.0r028z3i' 
+            },
+            'source-layer': 'no-6amco6',
+            'layout': {
+                'visibility': 'visible'
+            },
+            paint: {
+                'fill-color': 'grey',
+                'fill-opacity': 0
+                },
+           "minzoom":3,
+            "maxzoom":3.5,
+          });
+    
+    map.addLayer({                  
+            id: 'lahighlight1',
+            type: 'line',
+            source: {
+              type: 'vector',
+              url: 'mapbox://rubyjohnson.0r028z3i' 
+            },
+            'source-layer': 'no-6amco6',
+            'layout': {
+                'visibility': 'visible'
+            },
+            paint: {
+                'line-color': '#d1495b',  // RED COLOR          
+                'line-width': 5
+                },
+            filter: ['==','name','empty'],
+          "minzoom":3,
+            "maxzoom":3.5,
+          });
+    
+    map.on('mousemove', function(e) {       
+          var la1 = map.queryRenderedFeatures(e.point, {
+            layers: ['LocalAuthorities1']
+          });
+
+        if (la1.length==1) { 
+        map.setFilter('lahighlight1', ['==','name',la1[0].properties.name]);  
+        console.log(la1[0].properties.name);
+        document.getElementById('laname').innerHTML = "<h4> Country: " +la1[0].properties.name + " <br> Visa rules:  " + la1[0].properties.visa; 
+        console.log(la1[0].id);
+        console.log(la1);              
+        } else {
+        map.setFilter('lahighlight1', ['==','name','null']);
+        console.log('No features');           
+        }    
+        });
+    
+    map.addLayer({                  // OTHER VISA RULES
+            id: 'LocalAuthorities2',
+            type: 'fill',
+            source: {
+              type: 'vector',
+              url: 'mapbox://rubyjohnson.cq1pymji' 
+            },
+            'source-layer': 'other-1sx9l0', 
+            'layout': {
+                'visibility': 'visible'
+            },
+            paint: {
+                'fill-color': 'grey',
+                'fill-opacity': 0
+                },        
+            "minzoom":3,
+            "maxzoom":3.5,
+          });
+    
+    map.addLayer({                
+            id: 'lahighlight2',
+            type: 'line',
+            source: {
+              type: 'vector',
+              url: 'mapbox://rubyjohnson.cq1pymji' 
+            },
+            'source-layer': 'other-1sx9l0',
+            'layout': {
+                'visibility': 'visible'
+            },
+            paint: {
+                'line-color': '#edae49',  // ORANGE COLOR         
+                'line-width': 5
+                },
+            filter: ['==','name','empty']
+          });
+    
+    map.on('mousemove', function(e) {      
+          var la2 = map.queryRenderedFeatures(e.point, {
+            layers: ['LocalAuthorities2']
+          });
+
+
+        if (la2.length==1) { 
+        map.setFilter('lahighlight2', ['==','name',la2[0].properties.name]);  
+        console.log(la2[0].properties.name);
+        document.getElementById('laname').innerHTML = "<h4> Country: " + la2[0].properties.name + "<h4> Visa Rules: " + la2[0].properties.visa; 
+        console.log(la2[0].id);
+        console.log(la2);              
+        } else {
+        map.setFilter('lahighlight2', ['==','name','null']);
+        }  
+        });
+    
+    map.addLayer({ // NEARBY COUNTRIES                
+            id: 'LocalAuthorities3',
+            type: 'fill',
+            source: {
+              type: 'vector',
+              url: 'mapbox://rubyjohnson.16fdg4bg' 
+            },
+            'source-layer': 'first-1cgiaq', 
+            'layout': {
+                'visibility': 'visible'
+            },
+            paint: {
+                'fill-color': 'grey',
+                'fill-opacity': 0
+                },        
+            "minzoom":3,
+            "maxzoom":3.5,
+          });
+    
+    map.addLayer({                  
+            id: 'lahighlight3',
+            type: 'line',
+            source: {
+              type: 'vector',
+              url: 'mapbox://rubyjohnson.16fdg4bg'
+            },
+            'source-layer': 'first-1cgiaq',
+            'layout': {
+                'visibility': 'visible'
+            },
+            paint: {
+                'line-color': '#77946b', // GREEN COLOR            
+                'line-width': 5
+                },
+            filter: ['==','name','empty'],
+            "minzoom":3,
+            "maxzoom":3.5,
+          });
+    
+    map.on('mousemove', function(e) {       
+          var la3 = map.queryRenderedFeatures(e.point, {   
+            layers: ['LocalAuthorities3']
+          });
+
+        if (la3.length==1) { 
+        map.setFilter('lahighlight3', ['==','name',la3[0].properties.name]);  
+        console.log(la3[0].properties.name);
+        document.getElementById('laname').innerHTML = "<h4> Country: " +la3[0].properties.name + "<br> Visa Rules: " + la3[0].properties.visa; 
+        console.log(la3[0].id);
+        console.log(la3);              
+        } else {
+        map.setFilter('lahighlight3', ['==','name','null']);
+        }
+        });
+
+
+map.addLayer({ // Border crossing points layer
+            id: "crossing", 
+            type: "circle",
+            source: {
+                type: "vector",
+                url: "mapbox://rubyjohnson.bb8buyad"
+            },
+            "source-layer" :"ukr_border_crossing_17032022-8puxjq",
+            "layout": {
+                "visibility":"visible"                
+            }, 
+            "minzoom":5.5,
+            "maxzoom":7.5,            
+            paint: {
+                "circle-color":"white",
+                "circle-opacity":0.7,
+                "circle-stroke-width":5, 
+                "circle-stroke-color" : "grey",
+               "circle-stroke-opacity":1,
+                "circle-radius": 10}
+    });
+   });
+    
+    var popup2= new mapboxgl.Popup({closeButton: false}); // Popup for info about border crossing point
+    
+    map.on("mouseover","crossing", function (e){
+        popup2.setLngLat(e.features[0].geometry.coordinates)
+        .setHTML("<h3> Border Crossing: "+ e.features[0].properties["Name - English"] + "<h3> To: " + e.features[0].properties["Country"])
+        .addTo(map);
+    });
+    
+    map.on('mouseenter', 'crossing', function () {
+        map.getCanvas().style.cursor = 'pointer';
+            });
+   map.on('mouseleave', 'crossing', function () {
+        map.getCanvas().style.cursor = '';
+        popup2.remove();
+            })
+
+</script>   
